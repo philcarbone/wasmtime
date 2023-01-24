@@ -5,7 +5,9 @@ task:
   env:
     PATH: $PATH:$HOME/.cargo/bin
     GITHUB_TOKEN: ENCRYPTED[78af20dcfc8b5d62df8898e3842f51b35db587f01377346375530a1feff1fefcf4ef4389f4fc69fdabbe557e4cc8d5d7]
-    ARTIFACT_DIR: wasmtime-v5.0.0-x86_64-freebsd
+    ARTIFACT_NAME: wasmtime
+    ARTIFACT_ARCH: x64
+    ARTIFACT_OS: freebsd
   install_script: 
     - pkg install -y curl bash git-tiny gohugo jq
     - git submodule init
@@ -15,6 +17,9 @@ task:
     - cargo build --release
   upload_script: |
     #!/usr/bin/env bash
+    ARTIFACT_STRING="$ARTIFACT_NAME-$CIRRUS_TAG-$ARTIFACT_ARCH-$ARTIFACT_OS"
+    ARTIFACT_DIR="$ARTIFACT_STRING/"
+    ARTIFACT_ARCHIVE="$ARTIFACT_STRING.tar.gz"
     if [[ "$CIRRUS_RELEASE" == "" ]]; then
       CIRRUS_RELEASE=$(curl -sL https://api.github.com/repos/$CIRRUS_REPO_FULL_NAME/releases/tags/$CIRRUS_TAG | jq -r '.id')
       echo "https://api.github.com/repos/$CIRRUS_REPO_FULL_NAME/releases/tags/$CIRRUS_TAG"
@@ -36,18 +41,18 @@ task:
       LICENSE
     )
 
-    mkdir wasmtime-v5.0.0-x86_64-freebsd
-    for fpath in $files_to_upload
+    mkdir $ARTIFACT_DIR
+    for fpath in "${files_to_upload[@]}"
     do
       echo "Copying $fpath to $ARTIFACT_DIR"
-      cp "$fpath" "$ARTIFACT_DIR/"
+      cp "$fpath" "$ARTIFACT_DIR"
     done
 
     echo "Creating archive $ARTIFACT_DIR..."
-    tar -zcvf "$ARTIFACT_DIR.tar.gz" "$ARTIFACT_DIR/"
+    tar -zcvf "$ARTIFACT_ARCHIVE" "$ARTIFACT_DIR"
 
-    echo "Uploading $ARTIFACT_DIR.tar.gz..."
-    name=$(basename "$ARTIFACT_DIR.tar.gz")
+    echo "Uploading $ARTIFACT_ARCHIVE..."
+    name=$(basename "$ARTIFACT_ARCHIVE")
     url_to_upload="https://uploads.github.com/repos/$CIRRUS_REPO_FULL_NAME/releases/$CIRRUS_RELEASE/assets?name=$name"
     echo "Uploading to $url_to_upload"
     curl -X POST \
