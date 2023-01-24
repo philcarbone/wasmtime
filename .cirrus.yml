@@ -48,6 +48,9 @@ task:
       cp "$fpath" "$ARTIFACT_DIR"
     done
 
+    echo "Artifacts to archive:"
+    ls "$ARTIFACT_DIR"
+
     echo "Creating archive $ARTIFACT_DIR..."
     tar -zcvf "$ARTIFACT_ARCHIVE" "$ARTIFACT_DIR"
 
@@ -56,7 +59,7 @@ task:
     url_to_upload="https://uploads.github.com/repos/$CIRRUS_REPO_FULL_NAME/releases/$CIRRUS_RELEASE/assets?name=$name"
     echo "Uploading to $url_to_upload"
     curl -X POST \
-      --data-binary @$fpath \
+      --data-binary @$ARTIFACT_ARCHIVE \
       --header "Authorization: token $GITHUB_TOKEN" \
       --header "Content-Type: application/octet-stream" \
       $url_to_upload
